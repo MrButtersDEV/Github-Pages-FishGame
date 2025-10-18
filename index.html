@@ -55,31 +55,40 @@
         /* Layout for Active Game: Wider card to accommodate side-by-side view */
         .main-card.active-game {
             width: 650px; 
+            padding-top: 1rem; /* Reduced top padding when active */
         }
 
         .main-title {
-            font-size: 2.5rem; /* Slightly larger title */
+            font-size: 2.5rem; 
             font-weight: 900; 
             text-align: center;
             margin-bottom: 1.5rem; 
-            color: #ffd700; /* Gold */
-            text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); /* Subtle glow on title */
+            color: #ffd700; 
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); 
+        }
+        
+        /* Hide the large title when the game is active */
+        .main-title.hidden-on-active {
+            display: block;
+        }
+        .active-game .main-title.hidden-on-active {
+            display: none;
         }
 
         /* --- LAYOUT AND PANELS --- */
         .game-container {
             display: flex;
             flex-direction: column; /* Default: Stacked vertically */
-            gap: 1.25rem; /* Increased gap */
+            gap: 1.25rem; 
         }
         
         /* Layout for Active Game: Side-by-side view */
         .game-container.active-game-layout {
             flex-direction: row; /* Switch to horizontal layout */
-            align-items: stretch; /* Ensure panels fill the full height of the fishing area */
+            align-items: stretch; 
         }
         
-        /* In active layout, give the fishing area more space (approx 66%) */
+        /* In active layout, give the fishing area most space (approx 66%) */
         .game-container.active-game-layout > .fishing-area {
             flex: 2; 
         }
@@ -88,7 +97,8 @@
         .game-container.active-game-layout > .inventory-panel {
             flex: 1; 
             display: flex; 
-            flex-direction: column; /* Ensure inner content remains stacked */
+            flex-direction: column; 
+            gap: 1.5rem; /* Gap for status items */
         }
 
         .fishing-area {
@@ -96,11 +106,20 @@
             flex-direction: column;
             align-items: center;
             padding: 1.5rem; 
-            background-color: #2c4251; /* Lighter panel background */
+            background-color: #2c4251; 
             border-radius: 1rem; 
             border: 1px solid #3c6e71; 
             box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.15); 
+            /* MODIFIED: Smaller default height for the home screen */
+            min-height: 350px; 
+            transition: min-height 0.3s ease; /* Smooth transition */
         }
+        
+        /* NEW: Apply taller height only when the game is active */
+        .active-game .fishing-area {
+            min-height: 550px; 
+        }
+
 
         .inventory-panel {
             width: 100%;
@@ -117,7 +136,23 @@
             margin-bottom: 0.75rem; 
             border-bottom: 2px solid #4a6c75; 
             padding-bottom: 0.5rem; 
-            color: #7fffd4; /* Aquamarine highlight */
+            color: #7fffd4; 
+        }
+        
+        /* Custom status container inside the inventory panel */
+        .game-status-box {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            background-color: #1f2a36; 
+            border-radius: 0.5rem;
+        }
+        
+        .game-status-box h3 {
+            font-size: 1.2rem;
+            margin: 0 0 0.5rem 0;
+            color: #ffd700;
         }
 
         .inventory-list {
@@ -125,37 +160,43 @@
             padding: 0;
             margin: 0;
             color: #d1d5db; 
-            flex-grow: 1; /* Allow list to take up vertical space when side-by-side */
-            
+            flex-grow: 1; 
+            overflow-y: auto; /* Allow scrolling for many catches */
+            gap: 0.6rem; 
             display: flex;
             flex-direction: column;
-            gap: 0.6rem; 
+            max-height: 250px; /* Max height for log list */
         }
         
         .inventory-list li {
             padding: 0;
             font-weight: 600; 
+            /* Added ellipsis for long names */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         .inventory-list .placeholder {
-            color: #8da4b2; /* Lighter placeholder text */
+            color: #8da4b2; 
             font-style: italic;
         }
 
 
-        /* --- STATUS PANEL --- */
-        .status-panel {
+        /* --- STATUS PANEL (Top of Fishing Area) --- */
+        .status-panel-top {
             width: 100%;
             margin-bottom: 1rem; 
             padding: 0.8rem; 
             background-color: #1f2a36; 
             border-radius: 0.75rem; 
+            text-align: center;
+            font-size: 1.1rem; 
+            font-weight: 700;
+            height: 3.5rem; /* Ensure consistent height */
             display: flex;
-            justify-content: space-around;
-            font-size: 0.95rem; 
-            font-family: monospace; 
-            letter-spacing: 0.5px;
-            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
         }
 
         /* --- ACTION BUTTON --- */
@@ -188,15 +229,22 @@
             cursor: not-allowed;
             box-shadow: none;
         }
+        
+        /* NEW: Hide the action button when the game is active (during minigame) */
+        .active-game-layout .action-button {
+            display: none; 
+        }
+
 
         /* --- MINIGAME BAR (AQUATIC BAR) --- */
         .minigame-area {
             display: flex;
+            flex-direction: column; /* Stack bar and instructions */
             justify-content: center;
             align-items: center;
             width: 100%;
             position: relative;
-            flex-grow: 1; 
+            flex-grow: 1; /* Allows it to consume available vertical space */
         }
         
         .hidden {
@@ -204,18 +252,38 @@
         }
 
         .game-bar-container {
-            /* Now uses dynamic height to prevent clipping on small screens */
-            height: min(40vh, 400px); 
-            width: 3rem; /* Slightly wider bar */
+            /* INCREASED: Maximize vertical space for the bar to 98% */
+            height: 98%; 
+            width: 3.5rem; /* Slightly wider bar */
             /* Gradient for water depth effect */
             background: linear-gradient(to top, #0077b6, #00b4d8, #90e0ef); 
             border: 4px solid #48cae4; 
             border-radius: 9999px; 
             overflow: hidden;
             position: relative;
-            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5); /* Inner shadow for depth */
-            margin-bottom: 0.5rem; 
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5); 
+            margin-bottom: 0.5rem; /* Reduced margin to free up space */
         }
+        
+        /* When active, the minigame area has a different alignment */
+        .active-game-layout .fishing-area {
+            /* Ensure the content aligns vertically */
+            justify-content: space-between; 
+            padding: 0.75rem; /* Reduced padding when active */
+        }
+        
+        .active-game-layout .minigame-area {
+            flex-grow: 1; 
+            height: 100%; /* Take all height */
+            padding-top: 0.5rem;
+        }
+        
+        .active-game-layout .game-bar-container {
+            /* Ensure bar is centered horizontally */
+            margin-left: auto;
+            margin-right: auto;
+        }
+
 
         .catch-progress-fill {
             position: absolute;
@@ -254,14 +322,13 @@
         .text-red-400 { color: #ff8a8a; } /* Lighter red for stats */
         .text-gray-400 { color: #b0c4de; }
         .text-sm { font-size: 0.875rem; }
+        .text-base { font-size: 1rem; }
         .mt-2 { margin-top: 0.5rem; }
         
-        /* Added class to keep message display height consistent */
+        /* Adjusted message display to be the main status line */
         #message {
-            height: 1.5rem; 
-            line-height: 1.5rem;
             min-height: 1.5rem;
-            margin-bottom: 1rem;
+            line-height: 1.5rem;
         }
     </style>
 </head>
@@ -269,20 +336,17 @@
 
     <!-- This is the element that will be scaled to fit the window -->
     <div id="main-card" class="main-card">
-        <h1 class="main-title">The Reel Deal: Fishing</h1>
+        <h1 class="main-title hidden-on-active">The Reel Deal: Fishing</h1>
 
         <!-- Main Game Container -->
         <div id="game-container" class="game-container">
 
             <!-- Fishing Area & Minigame (Left/Main Panel in Active Mode) -->
             <div id="fishing-area-container" class="fishing-area">
-                <!-- Adjusted margin and height for stable message display -->
-                <p id="message" class="text-xl font-bold">Ready to cast!</p> 
-
-                <!-- Status Panel -->
-                <div id="status-panel" class="status-panel">
-                    <span id="catch-progress-display" class="text-blue-400">Catch Progress: 0%</span>
-                    <span id="fish-difficulty-display" class="text-red-400">Difficulty: -</span>
+                
+                <!-- Status Panel (Combined message display) -->
+                <div id="status-panel-top" class="status-panel-top">
+                    <p id="message">Ready to cast!</p> 
                 </div>
 
                 <!-- Fishing Bar Minigame -->
@@ -299,18 +363,26 @@
                             <span class="text-2xl" role="img" aria-label="Fish">🎣</span>
                         </div>
                     </div>
+                    <p id="instruction-text" class="text-base text-gray-400">Click or press Spacebar to reel!</p>
                 </div>
 
-                <!-- Action Button (Removed inline onclick) -->
+                <!-- Action Button (Used for 'Cast Line' only) -->
                 <button id="action-button" class="action-button">
                     Cast Line
                 </button>
-                <p id="instruction-text" class="text-sm text-gray-400 mt-2 hidden">Click or press Spacebar to reel!</p>
 
             </div>
 
             <!-- Inventory Panel (Right Panel in Active Mode) -->
             <div id="inventory-panel" class="inventory-panel">
+                <!-- Game Status Box (Visible when active) -->
+                <div id="game-status-box" class="game-status-box hidden">
+                    <h3>Current Catch Status</h3>
+                    <span id="catch-progress-display" class="text-blue-400 text-base">Catch Progress: 0%</span>
+                    <span id="fish-difficulty-display" class="text-red-400 text-base">Difficulty: -</span>
+                </div>
+                
+                <!-- Catch Log Header -->
                 <h2>Catch Log</h2>
                 <ul id="inventory-list" class="inventory-list">
                     <li class="placeholder">No catches yet.</li>
@@ -328,7 +400,7 @@
         const GAME_SPEED = 1000 / 60; 
         
         // --- DOM ELEMENTS ---
-        const mainCard = document.getElementById('main-card'); // The element that will be scaled
+        const mainCard = document.getElementById('main-card'); 
         const gameContainer = document.getElementById('game-container');
         const gameBarContainer = document.getElementById('game-bar-container'); 
         const fishingAreaContainer = document.getElementById('fishing-area-container'); 
@@ -340,6 +412,9 @@
         const catchProgressFill = document.getElementById('catch-progress-fill');
         const inventoryList = document.getElementById('inventory-list');
         const instructionText = document.getElementById('instruction-text');
+        
+        // New elements for status consolidation
+        const gameStatusBox = document.getElementById('game-status-box');
         const catchProgressDisplay = document.getElementById('catch-progress-display');
         const fishDifficultyDisplay = document.getElementById('fish-difficulty-display');
 
@@ -390,31 +465,24 @@
             const windowWidth = window.innerWidth;
             const windowHeight = window.innerHeight;
             
-            // 1. Calculate idealHeight and idealWidth (unscaled dimensions of the card)
             const originalTransform = mainCard.style.transform;
-            // Temporarily reset transform to get true, unscaled dimensions
             mainCard.style.transform = 'translate(-50%, -50%)'; 
             
             const idealHeight = mainCard.offsetHeight;
-            const idealWidth = mainCard.offsetWidth; // Dynamically grab the unscaled width
+            const idealWidth = mainCard.offsetWidth; 
             
-            mainCard.style.transform = originalTransform; // Restore original transform
+            mainCard.style.transform = originalTransform; 
 
-            // 2. Define buffers (space around the card)
             const VERTICAL_BUFFER = 32; 
             const HORIZONTAL_BUFFER = 32;
 
-            // 3. Calculate scale based on the limiting factor (width or height)
             const scaleX = (windowWidth - HORIZONTAL_BUFFER) / idealWidth;
             const scaleY = (windowHeight - VERTICAL_BUFFER) / idealHeight;
             
-            // Use the smaller scale factor to ensure everything fits inside the bounds
             const scaleFactor = Math.min(scaleX, scaleY);
             
-            // Ensure the scale factor is not negative or zero, and limit max scaling to 1 (don't scale up past ideal size)
             const finalScale = Math.min(1, Math.max(0.1, scaleFactor));
 
-            // Apply the transform to the main card, maintaining the center translation
             mainCard.style.transform = `translate(-50%, -50%) scale(${finalScale})`;
         }
 
@@ -446,7 +514,9 @@
             gameArea.classList.add('hidden');
             actionButton.disabled = false;
             actionButton.textContent = 'Cast Line';
-            instructionText.classList.add('hidden');
+            
+            // Hide active game status box
+            gameStatusBox.classList.add('hidden');
             
             // --- Layout Change: Reset to Stacked (Default 400px width) ---
             mainCard.classList.remove('active-game');
@@ -464,7 +534,6 @@
                 // Add to inventory
                 const listItem = document.createElement('li');
                 const colorStyle = FISH_COLOR_CLASSES[fish.color] || '';
-                // Applying color style directly to list item
                 listItem.style.cssText = `font-weight: 600; ${colorStyle}`;
                 listItem.textContent = catchName;
 
@@ -477,10 +546,6 @@
                 messageDisplay.textContent = `The ${gameState.currentFish.name} got away!`;
             }
             
-            // Reset status panel
-            catchProgressDisplay.textContent = `Catch Progress: 0%`;
-            fishDifficultyDisplay.textContent = `Difficulty: -`;
-
             // Reset state
             gameState.catchProgress = 0;
             gameState.currentFish = null;
@@ -490,24 +555,30 @@
 
         /** Initializes and starts the fishing minigame. */
         function startGame() {
+            // 1. Setup Initial State
+            const fish = chooseFish();
+            gameState.currentFish = fish;
+            gameState.isFishing = true;
+            gameState.catchProgress = 50; 
+            
             // --- Layout Change: Switch to Side-by-Side (Active 650px width) ---
             mainCard.classList.add('active-game');
             gameContainer.classList.add('active-game-layout');
+            
+            // Show active game status box
+            gameStatusBox.classList.remove('hidden');
             
             // Re-run scale calculation for the wider/taller (minigame) UI
             scaleGame(); 
 
             // 2. Setup UI (Must make visible FIRST to establish geometry)
             gameArea.classList.remove('hidden'); 
+            actionButton.disabled = true;
+            actionButton.textContent = '...'; 
             
             // Get the dynamic height of the game bar container
             const gameHeight = gameBarContainer.clientHeight; 
             
-            // 1. Setup Initial State
-            const fish = chooseFish();
-            gameState.currentFish = fish;
-            gameState.isFishing = true;
-            gameState.catchProgress = 50; 
             gameState.playerY = gameHeight / 2; // Start player in the middle
             gameState.playerVel = 0;
             
@@ -516,21 +587,19 @@
             gameState.fishSpeed = 0;
             gameState.fishMaxSpeed = fish.maxSpeed; 
 
-            // 2. Setup UI (Rest of UI updates)
+            // 3. Setup UI (Rest of UI updates)
             messageDisplay.textContent = `Fighting a ${fish.name}...`;
-            actionButton.disabled = true;
-            actionButton.textContent = 'REELING...';
-            instructionText.classList.remove('hidden');
+            instructionText.textContent = 'Click or press Spacebar to reel!';
             fishDifficultyDisplay.textContent = `Difficulty: ${fish.difficulty}`;
 
-            // 3. Start Loop
+            // 4. Start Loop
             gameState.animationFrameId = requestAnimationFrame(gameLoop);
         }
 
         /** The main game loop, called repeatedly via requestAnimationFrame. */
         function gameLoop() {
-            // Use the clientHeight to get the dynamic height from the CSS (min(40vh, 400px))
-            const gameHeight = gameBarContainer.clientHeight;
+            // Use the clientHeight to get the dynamic height from the CSS (98% of area)
+            const gameHeight = gameBarContainer.clientHeight; 
             const dt = GAME_SPEED / (1000 / 60); // Delta time factor
 
             // 1. --- Player Bar Physics ---
@@ -644,7 +713,7 @@
         function initializeGame() {
             // Attach interaction listeners
             if (fishingAreaContainer) {
-                // Ensure touch and click both call interaction
+                // Ensure touch and click both call interaction on the main fishing area
                 fishingAreaContainer.addEventListener('click', handleInteraction);
                 fishingAreaContainer.addEventListener('touchstart', handleInteraction, { passive: false });
             }
