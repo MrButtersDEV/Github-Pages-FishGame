@@ -240,9 +240,8 @@
                     </div>
                 </div>
 
-                <!-- Action Button -->
-                <button id="action-button" onclick="handleAction()"
-                        class="action-button">
+                <!-- Action Button (Removed inline onclick) -->
+                <button id="action-button" class="action-button">
                     Cast Line
                 </button>
                 <p id="instruction-text" class="text-sm text-gray-400 mt-2 hidden">Click or press Spacebar to reel!</p>
@@ -262,14 +261,14 @@
     <script>
         // --- GAME CONSTANTS ---
         const GAME_HEIGHT = 400; // Pixels of the minigame container height
-        const PLAYER_BAR_HEIGHT = 60; // Pixels (Increased size for more forgiving gameplay)
-        const FISH_TARGET_HEIGHT = 20; // Pixels
-        const CLICK_VELOCITY = 12; // Upward force on click (Reduced for finer control)
-        const GRAVITY = -0.4; // Downward force (Reduced for forgiveness)
-        const GAME_SPEED = 1000 / 60; // Target FPS (time per frame in ms)
+        const PLAYER_BAR_HEIGHT = 60; 
+        const FISH_TARGET_HEIGHT = 20; 
+        const CLICK_VELOCITY = 12; 
+        const GRAVITY = -0.4; 
+        const GAME_SPEED = 1000 / 60; 
 
         // --- DOM ELEMENTS ---
-        const fishingAreaContainer = document.getElementById('fishing-area-container'); // NEW DOM ELEMENT
+        const fishingAreaContainer = document.getElementById('fishing-area-container'); 
         const gameArea = document.getElementById('minigame-area');
         const actionButton = document.getElementById('action-button');
         const messageDisplay = document.getElementById('message');
@@ -283,11 +282,11 @@
 
         // Utility classes for catch log colors (used in JS)
         const FISH_COLOR_CLASSES = {
-            'text-green-300': 'color: #90ee90;', // Light green
-            'text-blue-300': 'color: #60a5fa;',   // Light blue
-            'text-yellow-300': 'color: #fcd34d;', // Yellow
-            'text-orange-400': 'color: #fb923c;', // Orange
-            'text-purple-400': 'color: #a78bfa;'  // Purple
+            'text-green-300': 'color: #90ee90;', 
+            'text-blue-300': 'color: #60a5fa;',   
+            'text-yellow-300': 'color: #fcd34d;', 
+            'text-orange-400': 'color: #fb923c;', 
+            'text-purple-400': 'color: #a78bfa;'  
         };
 
 
@@ -328,8 +327,7 @@
 
         /** Chooses a fish based on a weighted random difficulty */
         function chooseFish() {
-            // Simple probability: Higher index = rarer
-            const difficultyWeight = [5, 4, 3, 2, 1]; // Weights for Small Fry, Sardine, Trout, Bass, Carp
+            const difficultyWeight = [5, 4, 3, 2, 1]; 
             let totalWeight = difficultyWeight.reduce((a, b) => a + b, 0);
             let randomNum = getRandomInt(1, totalWeight);
 
@@ -360,8 +358,6 @@
                 
                 // Add to inventory
                 const listItem = document.createElement('li');
-                
-                // Apply color style based on the fish type
                 const colorStyle = FISH_COLOR_CLASSES[fish.color] || '';
                 listItem.style.cssText = `font-weight: 600; padding: 0.25rem 0; border-bottom: 1px solid #4b5563; ${colorStyle}`;
                 listItem.textContent = catchName;
@@ -392,12 +388,12 @@
             const fish = chooseFish();
             gameState.currentFish = fish;
             gameState.isFishing = true;
-            gameState.catchProgress = 50; // Start in the middle
-            gameState.playerY = GAME_HEIGHT / 2; // Start player in the middle
+            gameState.catchProgress = 50; 
+            gameState.playerY = GAME_HEIGHT / 2; 
             gameState.playerVel = 0;
             gameState.fishY = getRandomInt(0, GAME_HEIGHT - FISH_TARGET_HEIGHT);
             gameState.fishSpeed = 0;
-            gameState.fishMaxSpeed = fish.maxSpeed; // This value is correctly set here
+            gameState.fishMaxSpeed = fish.maxSpeed; 
 
             // 2. Setup UI
             messageDisplay.textContent = `Fighting a ${fish.name}...`;
@@ -413,13 +409,13 @@
 
         /** The main game loop, called repeatedly via requestAnimationFrame. */
         function gameLoop() {
-            const dt = GAME_SPEED / (1000 / 60); // Delta time factor (should be ~1.0 if running at 60 FPS)
+            const dt = GAME_SPEED / (1000 / 60); // Delta time factor
 
             // 1. --- Player Bar Physics ---
             gameState.playerVel += GRAVITY * dt;
             gameState.playerY += gameState.playerVel * dt;
 
-            // Clamping the player bar to the boundaries (0 to GAME_HEIGHT - PLAYER_BAR_HEIGHT)
+            // Clamping the player bar to the boundaries
             const maxPlayerY = GAME_HEIGHT - PLAYER_BAR_HEIGHT;
             if (gameState.playerY < 0) {
                 gameState.playerY = 0;
@@ -430,11 +426,9 @@
             }
 
             // 2. --- Fish Target Movement (Random Walk) ---
-            // Randomly change fish speed slightly
             gameState.fishSpeed += (Math.random() - 0.5) * gameState.fishMaxSpeed * 0.4 * dt;
             
             // Clamp fish speed
-            // This is the correct fix from the last round, using the maxSpeed set in gameState.
             const maxSpeed = gameState.fishMaxSpeed; 
             gameState.fishSpeed = Math.min(Math.max(gameState.fishSpeed, -maxSpeed), maxSpeed);
 
@@ -452,25 +446,19 @@
             }
 
             // 3. --- Catch Progress Calculation ---
-            const playerCenter = gameState.playerY + PLAYER_BAR_HEIGHT / 2;
-            const fishCenter = gameState.fishY + FISH_TARGET_HEIGHT / 2;
-            
-            // Check for overlap: player's top must be above fish's bottom AND player's bottom must be below fish's top
             const playerTop = gameState.playerY + PLAYER_BAR_HEIGHT;
             const fishTop = gameState.fishY + FISH_TARGET_HEIGHT;
-
             const isOverlapping = (playerTop > gameState.fishY) && (gameState.playerY < fishTop);
 
             if (isOverlapping) {
-                // Generously increase progress when aligned (0.3 base + up to 0.6 bonus)
-                const centerDistance = Math.abs(playerCenter - fishCenter);
+                // Calculate alignment factor for better control feedback
+                const playerCenter = gameState.playerY + PLAYER_BAR_HEIGHT / 2;
+                const fishCenter = gameState.fishY + FISH_TARGET_HEIGHT / 2;
                 const tolerance = (PLAYER_BAR_HEIGHT + FISH_TARGET_HEIGHT) / 2;
-                const alignmentFactor = 1 - (centerDistance / tolerance); // Closer to 1 the better
+                const alignmentFactor = 1 - (Math.abs(playerCenter - fishCenter) / tolerance); 
                 
-                // Increase progress based on how well centered the player is
                 gameState.catchProgress += (0.3 + alignmentFactor * 0.6) * dt; 
             } else {
-                // Slower loss rate for more forgiving catch-up time
                 gameState.catchProgress -= 0.25 * dt; 
             }
 
@@ -500,7 +488,6 @@
         function applyImpulse() {
             if (gameState.isFishing) {
                 gameState.playerVel += CLICK_VELOCITY;
-                // Cap max upward velocity
                 gameState.playerVel = Math.min(gameState.playerVel, 14);
             }
         }
@@ -516,7 +503,6 @@
 
         /** Handles mouse clicks and touch events for the minigame. */
         function handleInteraction(event) {
-            // Prevent scrolling on touch devices during the minigame
             if (gameState.isFishing) {
                 event.preventDefault(); 
                 applyImpulse();
@@ -533,14 +519,18 @@
 
         // --- INITIALIZATION ---
         
-        // Attach click/touch listeners to the more specific fishing area container 
-        // to handle mouse and touch interaction during the minigame.
+        // Use programmatic event listeners for reliability
         if (fishingAreaContainer) {
             fishingAreaContainer.addEventListener('click', handleInteraction);
             fishingAreaContainer.addEventListener('touchstart', handleInteraction, { passive: false });
         }
         
-        // Attach keydown listener to the document for maximum reliability in an iframe environment.
+        // IMPORTANT: Attach click listener to the action button
+        if (actionButton) {
+            actionButton.addEventListener('click', handleAction);
+        }
+        
+        // Attach keydown listener to the document for maximum reliability
         document.addEventListener('keydown', handleKey);
         
         // Ensure initial UI state is correct
