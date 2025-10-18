@@ -206,7 +206,7 @@
         .mt-2 { margin-top: 0.5rem; }
     </style>
 </head>
-<body onkeydown="handleKey(event)">
+<body>
 
     <div class="main-card">
         <h1 class="main-title">The Reel Deal: Fishing</h1>
@@ -434,7 +434,7 @@
             gameState.fishSpeed += (Math.random() - 0.5) * gameState.fishMaxSpeed * 0.4 * dt;
             
             // Clamp fish speed
-            // FIX: Changed from gameState.currentFish.fishMaxSpeed to the correct gameState.fishMaxSpeed
+            // This is the correct fix from the last round, using the maxSpeed set in gameState.
             const maxSpeed = gameState.fishMaxSpeed; 
             gameState.fishSpeed = Math.min(Math.max(gameState.fishSpeed, -maxSpeed), maxSpeed);
 
@@ -534,13 +534,14 @@
         // --- INITIALIZATION ---
         
         // Attach click/touch listeners to the more specific fishing area container 
-        // instead of the entire document body for better reliability in Discord Activities (iFrames).
+        // to handle mouse and touch interaction during the minigame.
         if (fishingAreaContainer) {
             fishingAreaContainer.addEventListener('click', handleInteraction);
             fishingAreaContainer.addEventListener('touchstart', handleInteraction, { passive: false });
         }
         
-        // NOTE: The keydown listener is still set directly in the body tag: onkeydown="handleKey(event)"
+        // Attach keydown listener to the document for maximum reliability in an iframe environment.
+        document.addEventListener('keydown', handleKey);
         
         // Ensure initial UI state is correct
         playerBar.style.height = `${PLAYER_BAR_HEIGHT}px`;
