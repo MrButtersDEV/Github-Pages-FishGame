@@ -6,152 +6,197 @@
     <title>The Reel Deal Fishing Game</title>
     <!-- Use Inter font and internal CSS -->
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        /* Universal Box Sizing for layout stability */
+        * {
+            box-sizing: border-box; 
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght400;700;900&display=swap');
         
         /* --- GLOBAL STYLES --- */
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0b1121; /* Deep blue background */
+            background-color: #0d1b2a; /* Darker, atmospheric blue */
             color: #ffffff;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 100vh;
-            padding: 1rem;
+            width: 100%;
+            min-height: 100vh; 
+            padding: 0;
             margin: 0;
+            overflow: hidden;
         }
 
-        /* --- MAIN CONTAINER / CARD --- */
+        /* --- MAIN SCALING CONTAINER / CARD --- */
         .main-card {
-            width: 100%;
-            max-width: 48rem; /* max-w-4xl */
-            padding: 1.5rem; /* p-6 */
-            background-color: #1f2937; /* bg-gray-800 */
-            border-radius: 1rem; /* rounded-2xl */
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); /* shadow-2xl */
+            width: 400px; /* Default width (stacked layout) */
+            max-width: none; 
+
+            padding: 1.5rem; /* Increased padding */
+            background-color: #1a2a40; /* Darker navy base */
+            border-radius: 1.5rem; 
+            
+            /* Aquatic Glow Effect */
+            border: 2px solid #3c6e71; 
+            box-shadow: 
+                0 4px 6px rgba(0, 0, 0, 0.4), 
+                0 0 20px rgba(60, 110, 113, 0.5); 
+            
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); 
+            transform-origin: center center;
+            
+            transition: width 0.3s ease; /* Smooth transition for width change */
         }
         
+        /* Layout for Active Game: Wider card to accommodate side-by-side view */
+        .main-card.active-game {
+            width: 650px; 
+        }
+
         .main-title {
-            font-size: 2.25rem; /* text-4xl */
-            font-weight: 800; /* font-extrabold */
+            font-size: 2.5rem; /* Slightly larger title */
+            font-weight: 900; 
             text-align: center;
-            margin-bottom: 1.5rem; /* mb-6 */
-            color: #fcd34d; /* text-yellow-300 */
+            margin-bottom: 1.5rem; 
+            color: #ffd700; /* Gold */
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); /* Subtle glow on title */
         }
 
         /* --- LAYOUT AND PANELS --- */
         .game-container {
             display: flex;
-            flex-direction: column;
-            gap: 1.5rem; /* gap-6 */
+            flex-direction: column; /* Default: Stacked vertically */
+            gap: 1.25rem; /* Increased gap */
+        }
+        
+        /* Layout for Active Game: Side-by-side view */
+        .game-container.active-game-layout {
+            flex-direction: row; /* Switch to horizontal layout */
+            align-items: stretch; /* Ensure panels fill the full height of the fishing area */
+        }
+        
+        /* In active layout, give the fishing area more space (approx 66%) */
+        .game-container.active-game-layout > .fishing-area {
+            flex: 2; 
+        }
+        
+        /* In active layout, the inventory panel (Catch Log) takes less space (approx 33%) */
+        .game-container.active-game-layout > .inventory-panel {
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; /* Ensure inner content remains stacked */
         }
 
         .fishing-area {
-            flex-grow: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 1rem; /* p-4 */
-            background-color: #374151; /* bg-gray-700 */
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); /* shadow-inner */
+            padding: 1.5rem; 
+            background-color: #2c4251; /* Lighter panel background */
+            border-radius: 1rem; 
+            border: 1px solid #3c6e71; 
+            box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.15); 
         }
 
         .inventory-panel {
             width: 100%;
-            padding: 1rem; /* p-4 */
-            background-color: #374151; /* bg-gray-700 */
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06); /* shadow-inner */
+            padding: 1.5rem; 
+            background-color: #2c4251; 
+            border-radius: 1rem; 
+            border: 1px solid #3c6e71; 
+            box-shadow: inset 0 3px 6px rgba(0, 0, 0, 0.15); 
         }
 
         .inventory-panel h2 {
-            font-size: 1.5rem; /* text-2xl */
-            font-weight: 700; /* font-bold */
-            margin-bottom: 1rem; /* mb-4 */
-            border-bottom: 1px solid #4b5563; /* border-b border-gray-600 */
-            padding-bottom: 0.5rem; /* pb-2 */
-            color: #facc15; /* text-yellow-400 */
+            font-size: 1.6rem; 
+            font-weight: 700; 
+            margin-bottom: 0.75rem; 
+            border-bottom: 2px solid #4a6c75; 
+            padding-bottom: 0.5rem; 
+            color: #7fffd4; /* Aquamarine highlight */
         }
 
         .inventory-list {
             list-style: none;
             padding: 0;
             margin: 0;
-            line-height: 1.5;
-            color: #d1d5db; /* text-gray-300 */
+            color: #d1d5db; 
+            flex-grow: 1; /* Allow list to take up vertical space when side-by-side */
+            
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem; 
         }
         
         .inventory-list li {
-            padding: 0.25rem 0; /* p-1 */
-            border-bottom: 1px solid #4b5563; /* border-b border-gray-600 */
-            font-weight: 600; /* font-semibold */
+            padding: 0;
+            font-weight: 600; 
         }
         
         .inventory-list .placeholder {
-            color: #6b7280; /* text-gray-500 */
+            color: #8da4b2; /* Lighter placeholder text */
             font-style: italic;
         }
 
 
-        /* Desktop Layout (md:flex-row) */
-        @media (min-width: 768px) {
-            .game-container {
-                flex-direction: row;
-            }
-            .inventory-panel {
-                width: 33.3333%; /* md:w-1/3 */
-            }
-        }
-
         /* --- STATUS PANEL --- */
         .status-panel {
             width: 100%;
-            margin-bottom: 1rem; /* mb-4 */
-            padding: 0.75rem; /* p-3 */
-            background-color: #111827; /* bg-gray-900 */
-            border-radius: 0.5rem; /* rounded-lg */
+            margin-bottom: 1rem; 
+            padding: 0.8rem; 
+            background-color: #1f2a36; 
+            border-radius: 0.75rem; 
             display: flex;
             justify-content: space-around;
-            font-size: 0.875rem; /* text-sm */
-            font-family: monospace; /* font-mono */
+            font-size: 0.95rem; 
+            font-family: monospace; 
+            letter-spacing: 0.5px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
         }
 
         /* --- ACTION BUTTON --- */
         .action-button {
-            background-color: #4f46e5; /* bg-indigo-600 */
-            padding: 0.75rem 2rem; /* px-8 py-3 */
+            /* Vibrant, glowing blue button */
+            background: linear-gradient(145deg, #1e90ff, #007acc); 
+            padding: 0.8rem 2.5rem; 
             color: white;
-            font-weight: 700; /* font-bold */
-            border-radius: 0.75rem; /* rounded-xl */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); /* shadow-lg */
-            margin-top: 1.5rem; /* mt-6 */
-            transition: background-color 0.2s, transform 0.2s, opacity 0.2s;
+            font-weight: 700; 
+            border-radius: 0.75rem; 
+            box-shadow: 0 0 15px rgba(30, 144, 255, 0.6);
+            margin-top: 1.5rem; 
+            transition: background-color 0.2s, transform 0.2s, opacity 0.2s, box-shadow 0.2s;
             border: none;
             cursor: pointer;
         }
 
         .action-button:hover {
-            background-color: #4338ca; /* hover:bg-indigo-700 */
-            transform: scale(1.05); /* hover:scale-105 */
+            background: linear-gradient(145deg, #007acc, #1e90ff);
+            transform: scale(1.05); 
+            box-shadow: 0 0 25px rgba(30, 144, 255, 1);
         }
 
         .action-button:active {
-            transform: scale(0.95); /* active:scale-95 */
+            transform: scale(0.95); 
         }
 
         .action-button:disabled {
-            opacity: 0.5; /* disabled:opacity-50 */
+            opacity: 0.5; 
             cursor: not-allowed;
+            box-shadow: none;
         }
 
-        /* --- MINIGAME BAR --- */
+        /* --- MINIGAME BAR (AQUATIC BAR) --- */
         .minigame-area {
             display: flex;
             justify-content: center;
             align-items: center;
             width: 100%;
             position: relative;
+            flex-grow: 1; 
         }
         
         .hidden {
@@ -159,64 +204,80 @@
         }
 
         .game-bar-container {
-            height: 400px;
-            width: 2.5rem; /* w-10 */
-            background-color: #1e3a8a; /* bg-blue-900 */
-            border: 4px solid #3b82f6; /* border-4 border-blue-500 */
-            border-radius: 9999px; /* rounded-full */
+            /* Now uses dynamic height to prevent clipping on small screens */
+            height: min(40vh, 400px); 
+            width: 3rem; /* Slightly wider bar */
+            /* Gradient for water depth effect */
+            background: linear-gradient(to top, #0077b6, #00b4d8, #90e0ef); 
+            border: 4px solid #48cae4; 
+            border-radius: 9999px; 
             overflow: hidden;
             position: relative;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* shadow-lg */
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5); /* Inner shadow for depth */
+            margin-bottom: 0.5rem; 
         }
 
         .catch-progress-fill {
             position: absolute;
             bottom: 0;
             width: 100%;
-            background-color: rgba(96, 165, 250, 0.5); /* bg-blue-400/50 */
+            /* Darker blue to represent progress */
+            background-color: rgba(0, 50, 80, 0.8); 
             transition: height 0.1s linear;
         }
 
         .player-bar {
             position: absolute;
             width: 100%;
-            background-color: #10b981; /* bg-green-500 */
-            border-radius: 0.5rem; /* rounded-lg */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); /* shadow-xl */
-            height: 60px; /* PLAYER_BAR_HEIGHT constant */
+            background-color: #7fffd4; /* Aquamarine */
+            border-radius: 0.5rem; 
+            /* Player bar glow */
+            box-shadow: 0 0 10px #7fffd4; 
+            height: 60px; 
         }
 
         .fish-target {
             position: absolute;
             width: 100%;
-            background-color: #ef4444; /* bg-red-500 */
-            border-radius: 9999px; /* rounded-full */
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); /* shadow-lg */
-            height: 20px; /* FISH_TARGET_HEIGHT constant */
+            background-color: #ff6347; /* Tomato Red */
+            border-radius: 9999px; 
+            /* Fish glow */
+            box-shadow: 0 0 15px #ff6347; 
+            height: 20px; 
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         /* Utility Text Colors */
-        .text-blue-400 { color: #60a5fa; }
-        .text-red-400 { color: #f87171; }
-        .text-gray-400 { color: #9ca3af; }
+        .text-blue-400 { color: #80c7ff; } /* Lighter blue for stats */
+        .text-red-400 { color: #ff8a8a; } /* Lighter red for stats */
+        .text-gray-400 { color: #b0c4de; }
         .text-sm { font-size: 0.875rem; }
         .mt-2 { margin-top: 0.5rem; }
+        
+        /* Added class to keep message display height consistent */
+        #message {
+            height: 1.5rem; 
+            line-height: 1.5rem;
+            min-height: 1.5rem;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
 
-    <div class="main-card">
+    <!-- This is the element that will be scaled to fit the window -->
+    <div id="main-card" class="main-card">
         <h1 class="main-title">The Reel Deal: Fishing</h1>
 
         <!-- Main Game Container -->
         <div id="game-container" class="game-container">
 
-            <!-- Fishing Area & Minigame -->
+            <!-- Fishing Area & Minigame (Left/Main Panel in Active Mode) -->
             <div id="fishing-area-container" class="fishing-area">
-                <p id="message" class="text-xl font-bold mb-4 h-6">Ready to cast!</p>
+                <!-- Adjusted margin and height for stable message display -->
+                <p id="message" class="text-xl font-bold">Ready to cast!</p> 
 
                 <!-- Status Panel -->
                 <div id="status-panel" class="status-panel">
@@ -227,7 +288,7 @@
                 <!-- Fishing Bar Minigame -->
                 <div id="minigame-area" class="minigame-area hidden">
                     <!-- Main Outer Bar (Water Column) -->
-                    <div class="game-bar-container">
+                    <div id="game-bar-container" class="game-bar-container">
                         <!-- Catch Progress Overlay (Water Fill) -->
                         <div id="catch-progress-fill" class="catch-progress-fill" style="height: 0%"></div>
                         <!-- Player Bar (Green) -->
@@ -248,8 +309,8 @@
 
             </div>
 
-            <!-- Inventory Panel -->
-            <div class="inventory-panel">
+            <!-- Inventory Panel (Right Panel in Active Mode) -->
+            <div id="inventory-panel" class="inventory-panel">
                 <h2>Catch Log</h2>
                 <ul id="inventory-list" class="inventory-list">
                     <li class="placeholder">No catches yet.</li>
@@ -260,14 +321,16 @@
 
     <script>
         // --- GAME CONSTANTS ---
-        const GAME_HEIGHT = 400; // Pixels of the minigame container height
-        const PLAYER_BAR_HEIGHT = 60; 
-        const FISH_TARGET_HEIGHT = 20; 
+        const PLAYER_BAR_HEIGHT = 60; // Fixed pixel height of player bar
+        const FISH_TARGET_HEIGHT = 20; // Fixed pixel height of fish
         const CLICK_VELOCITY = 12; 
         const GRAVITY = -0.4; 
         const GAME_SPEED = 1000 / 60; 
-
+        
         // --- DOM ELEMENTS ---
+        const mainCard = document.getElementById('main-card'); // The element that will be scaled
+        const gameContainer = document.getElementById('game-container');
+        const gameBarContainer = document.getElementById('game-bar-container'); 
         const fishingAreaContainer = document.getElementById('fishing-area-container'); 
         const gameArea = document.getElementById('minigame-area');
         const actionButton = document.getElementById('action-button');
@@ -294,7 +357,7 @@
         let gameState = {
             isFishing: false,
             animationFrameId: null,
-            
+
             // Player Bar State (Y is bottom position in pixels)
             playerY: 0,
             playerVel: 0,
@@ -319,6 +382,41 @@
         ];
 
         // --- UTILITY FUNCTIONS ---
+
+        /** Calculates and applies the scale factor to the main card to fit the window. */
+        function scaleGame() {
+            if (!mainCard) return;
+
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            
+            // 1. Calculate idealHeight and idealWidth (unscaled dimensions of the card)
+            const originalTransform = mainCard.style.transform;
+            // Temporarily reset transform to get true, unscaled dimensions
+            mainCard.style.transform = 'translate(-50%, -50%)'; 
+            
+            const idealHeight = mainCard.offsetHeight;
+            const idealWidth = mainCard.offsetWidth; // Dynamically grab the unscaled width
+            
+            mainCard.style.transform = originalTransform; // Restore original transform
+
+            // 2. Define buffers (space around the card)
+            const VERTICAL_BUFFER = 32; 
+            const HORIZONTAL_BUFFER = 32;
+
+            // 3. Calculate scale based on the limiting factor (width or height)
+            const scaleX = (windowWidth - HORIZONTAL_BUFFER) / idealWidth;
+            const scaleY = (windowHeight - VERTICAL_BUFFER) / idealHeight;
+            
+            // Use the smaller scale factor to ensure everything fits inside the bounds
+            const scaleFactor = Math.min(scaleX, scaleY);
+            
+            // Ensure the scale factor is not negative or zero, and limit max scaling to 1 (don't scale up past ideal size)
+            const finalScale = Math.min(1, Math.max(0.1, scaleFactor));
+
+            // Apply the transform to the main card, maintaining the center translation
+            mainCard.style.transform = `translate(-50%, -50%) scale(${finalScale})`;
+        }
 
         /** Generates a random integer between min (inclusive) and max (inclusive) */
         function getRandomInt(min, max) {
@@ -349,6 +447,13 @@
             actionButton.disabled = false;
             actionButton.textContent = 'Cast Line';
             instructionText.classList.add('hidden');
+            
+            // --- Layout Change: Reset to Stacked (Default 400px width) ---
+            mainCard.classList.remove('active-game');
+            gameContainer.classList.remove('active-game-layout');
+            
+            // Re-run scale calculation to fit the smaller (non-minigame) UI
+            scaleGame(); 
 
             if (success) {
                 const fish = gameState.currentFish;
@@ -359,7 +464,8 @@
                 // Add to inventory
                 const listItem = document.createElement('li');
                 const colorStyle = FISH_COLOR_CLASSES[fish.color] || '';
-                listItem.style.cssText = `font-weight: 600; padding: 0.25rem 0; border-bottom: 1px solid #4b5563; ${colorStyle}`;
+                // Applying color style directly to list item
+                listItem.style.cssText = `font-weight: 600; ${colorStyle}`;
                 listItem.textContent = catchName;
 
                 if (inventoryList.querySelector('li.placeholder')) {
@@ -384,22 +490,36 @@
 
         /** Initializes and starts the fishing minigame. */
         function startGame() {
+            // --- Layout Change: Switch to Side-by-Side (Active 650px width) ---
+            mainCard.classList.add('active-game');
+            gameContainer.classList.add('active-game-layout');
+            
+            // Re-run scale calculation for the wider/taller (minigame) UI
+            scaleGame(); 
+
+            // 2. Setup UI (Must make visible FIRST to establish geometry)
+            gameArea.classList.remove('hidden'); 
+            
+            // Get the dynamic height of the game bar container
+            const gameHeight = gameBarContainer.clientHeight; 
+            
             // 1. Setup Initial State
             const fish = chooseFish();
             gameState.currentFish = fish;
             gameState.isFishing = true;
             gameState.catchProgress = 50; 
-            gameState.playerY = GAME_HEIGHT / 2; 
+            gameState.playerY = gameHeight / 2; // Start player in the middle
             gameState.playerVel = 0;
-            gameState.fishY = getRandomInt(0, GAME_HEIGHT - FISH_TARGET_HEIGHT);
+            
+            // Ensure fish Y position respects the new fixed height
+            gameState.fishY = getRandomInt(0, gameHeight - FISH_TARGET_HEIGHT);
             gameState.fishSpeed = 0;
             gameState.fishMaxSpeed = fish.maxSpeed; 
 
-            // 2. Setup UI
+            // 2. Setup UI (Rest of UI updates)
             messageDisplay.textContent = `Fighting a ${fish.name}...`;
             actionButton.disabled = true;
             actionButton.textContent = 'REELING...';
-            gameArea.classList.remove('hidden');
             instructionText.classList.remove('hidden');
             fishDifficultyDisplay.textContent = `Difficulty: ${fish.difficulty}`;
 
@@ -409,14 +529,16 @@
 
         /** The main game loop, called repeatedly via requestAnimationFrame. */
         function gameLoop() {
+            // Use the clientHeight to get the dynamic height from the CSS (min(40vh, 400px))
+            const gameHeight = gameBarContainer.clientHeight;
             const dt = GAME_SPEED / (1000 / 60); // Delta time factor
 
             // 1. --- Player Bar Physics ---
             gameState.playerVel += GRAVITY * dt;
             gameState.playerY += gameState.playerVel * dt;
 
-            // Clamping the player bar to the boundaries
-            const maxPlayerY = GAME_HEIGHT - PLAYER_BAR_HEIGHT;
+            // Clamping the player bar to the boundaries (0 to GAME_HEIGHT - PLAYER_BAR_HEIGHT)
+            const maxPlayerY = gameHeight - PLAYER_BAR_HEIGHT;
             if (gameState.playerY < 0) {
                 gameState.playerY = 0;
                 gameState.playerVel = 0;
@@ -436,7 +558,7 @@
             gameState.fishY += gameState.fishSpeed * dt;
 
             // Clamp fish position and reverse speed if hitting boundaries
-            const maxFishY = GAME_HEIGHT - FISH_TARGET_HEIGHT;
+            const maxFishY = gameHeight - FISH_TARGET_HEIGHT;
             if (gameState.fishY < 0) {
                 gameState.fishY = 0;
                 gameState.fishSpeed *= -0.8; // Dampen bounce
@@ -519,23 +641,38 @@
 
         // --- INITIALIZATION ---
         
-        // Use programmatic event listeners for reliability
-        if (fishingAreaContainer) {
-            fishingAreaContainer.addEventListener('click', handleInteraction);
-            fishingAreaContainer.addEventListener('touchstart', handleInteraction, { passive: false });
+        function initializeGame() {
+            // Attach interaction listeners
+            if (fishingAreaContainer) {
+                // Ensure touch and click both call interaction
+                fishingAreaContainer.addEventListener('click', handleInteraction);
+                fishingAreaContainer.addEventListener('touchstart', handleInteraction, { passive: false });
+            }
+            
+            if (actionButton) {
+                actionButton.addEventListener('click', handleAction);
+            }
+            
+            document.addEventListener('keydown', handleKey);
+            
+            // Set initial heights for the moving elements
+            playerBar.style.height = `${PLAYER_BAR_HEIGHT}px`;
+            fishTarget.style.height = `${FISH_TARGET_HEIGHT}px`;
+
+            // Set the initial scale
+            scaleGame();
         }
+
+        // Add a listener for when the window finishes loading to ensure all DOM elements are sized correctly
+        window.addEventListener('load', initializeGame);
         
-        // IMPORTANT: Attach click listener to the action button
-        if (actionButton) {
-            actionButton.addEventListener('click', handleAction);
+        // Resize handler now recalculates and applies the scaling factor
+        window.addEventListener('resize', scaleGame);
+
+        // Fallback for environments where 'load' doesn't fire as expected (like some iframes)
+        if (document.readyState === 'complete') {
+            initializeGame();
         }
-        
-        // Attach keydown listener to the document for maximum reliability
-        document.addEventListener('keydown', handleKey);
-        
-        // Ensure initial UI state is correct
-        playerBar.style.height = `${PLAYER_BAR_HEIGHT}px`;
-        fishTarget.style.height = `${FISH_TARGET_HEIGHT}px`;
 
     </script>
 </body>
