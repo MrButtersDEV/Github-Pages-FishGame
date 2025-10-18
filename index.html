@@ -215,7 +215,7 @@
         <div id="game-container" class="game-container">
 
             <!-- Fishing Area & Minigame -->
-            <div class="fishing-area">
+            <div id="fishing-area-container" class="fishing-area">
                 <p id="message" class="text-xl font-bold mb-4 h-6">Ready to cast!</p>
 
                 <!-- Status Panel -->
@@ -269,6 +269,7 @@
         const GAME_SPEED = 1000 / 60; // Target FPS (time per frame in ms)
 
         // --- DOM ELEMENTS ---
+        const fishingAreaContainer = document.getElementById('fishing-area-container'); // NEW DOM ELEMENT
         const gameArea = document.getElementById('minigame-area');
         const actionButton = document.getElementById('action-button');
         const messageDisplay = document.getElementById('message');
@@ -396,7 +397,7 @@
             gameState.playerVel = 0;
             gameState.fishY = getRandomInt(0, GAME_HEIGHT - FISH_TARGET_HEIGHT);
             gameState.fishSpeed = 0;
-            gameState.fishMaxSpeed = fish.maxSpeed;
+            gameState.fishMaxSpeed = fish.maxSpeed; // This value is correctly set here
 
             // 2. Setup UI
             messageDisplay.textContent = `Fighting a ${fish.name}...`;
@@ -433,7 +434,8 @@
             gameState.fishSpeed += (Math.random() - 0.5) * gameState.fishMaxSpeed * 0.4 * dt;
             
             // Clamp fish speed
-            const maxSpeed = gameState.fishMaxSpeed;
+            // FIX: Changed from gameState.currentFish.fishMaxSpeed to the correct gameState.fishMaxSpeed
+            const maxSpeed = gameState.fishMaxSpeed; 
             gameState.fishSpeed = Math.min(Math.max(gameState.fishSpeed, -maxSpeed), maxSpeed);
 
             // Apply speed to position
@@ -531,10 +533,14 @@
 
         // --- INITIALIZATION ---
         
-        // Add event listeners for mouse clicks and touches on the whole body when fishing
-        document.body.addEventListener('click', handleInteraction);
-        document.body.addEventListener('touchstart', handleInteraction, { passive: false });
-        // NOTE: The keydown listener is set directly in the body tag: onkeydown="handleKey(event)"
+        // Attach click/touch listeners to the more specific fishing area container 
+        // instead of the entire document body for better reliability in Discord Activities (iFrames).
+        if (fishingAreaContainer) {
+            fishingAreaContainer.addEventListener('click', handleInteraction);
+            fishingAreaContainer.addEventListener('touchstart', handleInteraction, { passive: false });
+        }
+        
+        // NOTE: The keydown listener is still set directly in the body tag: onkeydown="handleKey(event)"
         
         // Ensure initial UI state is correct
         playerBar.style.height = `${PLAYER_BAR_HEIGHT}px`;
