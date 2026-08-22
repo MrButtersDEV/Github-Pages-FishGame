@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pixel Cast: Motion Fishing</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Retro Pixel Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        * {
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        body {
+            font-family: 'Press Start 2P', cursive, monospace;
+            background-color: #0d1b2a;
+            color: #e0e1dd;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        .pixel-font {
+            font-family: 'Press Start 2P', monospace;
+        }
+        .pixel-subfont {
+            font-family: 'VT323', monospace;
+        }
+        .pixel-border {
+            border: 4px solid #1b263b;
+            box-shadow: inset -4px -4px 0px 0px #0d1b2a, inset 4px 4px 0px 0px #415a77;
+        }
+        .pixel-btn {
+            background-color: #415a77;
+            border: 4px solid #0d1b2a;
+            box-shadow: inset -4px -4px 0px 0px #1b263b, inset 4px 4px 0px 0px #778da9;
+            transition: all 0.05s ease;
+        }
+        .pixel-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: inset -2px -2px 0px 0px #1b263b, inset 2px 2px 0px 0px #778da9;
+        }
+        .pixel-panel {
+            background-color: #1b263b;
+            border: 4px solid #e0e1dd;
+            box-shadow: 6px 6px 0px 0px #0d1b2a;
+        }
+        /* Custom scrollbar for inventory modal */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0d1b2a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #415a77;
+            border: 2px solid #e0e1dd;
+        }
+        @keyframes floatAnim {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float {
+            animation: floatAnim 2s ease-in-out infinite;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 1; filter: drop-shadow(0 0 8px #f59e0b); }
+        }
+        .animate-glow {
+            animation: pulseGlow 1.5s infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 flex flex-col h-screen w-screen justify-between items-center select-none overflow-hidden">
+
+    <header class="w-full max-w-lg bg-slate-900 border-b-4 border-slate-800 p-2 z-20 flex justify-between items-center text-xs sm:text-sm">
+        <div class="flex items-center space-x-2">
+            <span class="text-amber-400">🪙</span>
+            <span id="goldDisplay" class="pixel-font text-amber-300">0</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <span class="text-blue-400">🎣 LVL <span id="levelDisplay">1</span></span>
+        </div>
+        <div class="flex items-center space-x-1">
+            <button id="sensorBtn" class="pixel-btn text-[10px] px-2 py-1 rounded text-emerald-300 hover:bg-slate-700">
+                📱 Tilt: Off
+            </button>
+            <button id="shopBtn" class="pixel-btn text-[10px] px-2 py-1 rounded text-amber-300 hover:bg-slate-700">
+                🛒 Shop
+            </button>
+            <button id="journalBtn" class="pixel-btn text-[10px] px-2 py-1 rounded text-cyan-300 hover:bg-slate-700">
+                📖 Log
+            </button>
+        </div>
+    </header>
+
+    <main class="relative w-full max-w-lg flex-1 flex flex-col items-center justify-center bg-slate-900 overflow-hidden">
+        
+        <!-- Interactive Canvas for Parallax Pixel Fishing Scene -->
+        <canvas id="gameCanvas" class="w-full h-full block cursor-pointer"></canvas>
+
+        <!-- Dynamic Catch Progress Bar (Top Overlay for Pop-up Marker Minigame) -->
+        <div id="minigameContainer" class="hidden absolute top-4 left-1/2 -translate-x-1/2 w-4/5 max-w-xs bg-slate-950/90 border-4 border-amber-600 rounded-lg p-2 flex flex-col items-center z-30 shadow-2xl backdrop-blur-sm">
+            <div class="w-full flex justify-between items-center text-[10px] text-amber-300 font-bold mb-1">
+                <span id="reelFishName">REELING FISH...</span>
+                <span id="controlModeTag">POP TARGETS & BALANCE!</span>
+            </div>
+            <!-- Catch Progress Bar -->
+            <div class="w-full h-4 bg-slate-900 rounded border border-slate-700 overflow-hidden relative">
+                <div id="catchProgress" class="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-emerald-400 w-1/2 transition-all duration-75"></div>
+            </div>
+        </div>
+
+        <!-- Banner Notification Popups -->
+        <div id="actionBanner" class="absolute top-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900/90 border-2 border-amber-400 text-amber-300 text-xs sm:text-sm rounded pixel-border pointer-events-none transition-all duration-300 transform scale-0 z-40 text-center">
+            TAP TO CAST
+        </div>
+
+        <!-- Interactive Tap/Reel Catch Zone (Mobile Screen Touch Area) -->
+        <div id="touchZone" class="absolute inset-0 z-10 flex flex-col items-center justify-end pb-8">
+            <button id="mainActionBtn" class="pixel-btn px-6 py-4 rounded-xl text-xs sm:text-sm text-amber-200 bg-amber-800/90 hover:bg-amber-700 active:scale-95 transition-transform shadow-lg animate-bounce">
+                🎣 TAP TO CAST LINE
+            </button>
+        </div>
+    </main>
+
+    <footer class="w-full max-w-lg bg-slate-900 border-t-4 border-slate-800 p-2 z-20 flex justify-between items-center text-[10px] text-slate-400">
+        <div>Rod: <span id="rodName" class="text-amber-300">Bamboo Pole</span></div>
+        <div>Lure: <span id="lureName" class="text-cyan-300">Basic Worm</span></div>
+        <div id="motionStatus" class="text-slate-500">Sensor: Ready</div>
+    </footer>
+
+    <div id="shopModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="pixel-panel w-full max-w-md p-4 rounded-lg flex flex-col space-y-4 max-h-[85vh]">
+            <div class="flex justify-between items-center border-b-2 border-slate-700 pb-2">
+                <h2 class="text-sm text-amber-300 font-bold">🛒 TACKLE SHOP</h2>
+                <button id="closeShop" class="text-red-400 font-bold hover:text-red-300">✖</button>
+            </div>
+            
+            <div class="overflow-y-auto space-y-3 pr-1 text-xs pixel-subfont text-base">
+                <!-- Rod Upgrades -->
+                <div class="bg-slate-800 p-3 rounded border border-slate-700 flex justify-between items-center">
+                    <div>
+                        <div class="text-amber-300 font-bold">Fiberglass Rod</div>
+                        <div class="text-slate-400 text-xs">+25% Catch Bar Size</div>
+                    </div>
+                    <button id="buyRod2" class="pixel-btn px-3 py-1 text-xs text-amber-300" onclick="game.buyItem('rod', 2, 100)">100 🪙</button>
+                </div>
+
+                <div class="bg-slate-800 p-3 rounded border border-slate-700 flex justify-between items-center">
+                    <div>
+                        <div class="text-amber-300 font-bold">Iridium Master Rod</div>
+                        <div class="text-slate-400 text-xs">+60% Catch Bar Size</div>
+                    </div>
+                    <button id="buyRod3" class="pixel-btn px-3 py-1 text-xs text-amber-300" onclick="game.buyItem('rod', 3, 350)">350 🪙</button>
+                </div>
+
+                <!-- Lure Upgrades -->
+                <div class="bg-slate-800 p-3 rounded border border-slate-700 flex justify-between items-center">
+                    <div>
+                        <div class="text-cyan-300 font-bold">Glow Lure</div>
+                        <div class="text-slate-400 text-xs">Calms fish (-30% erratic movement)</div>
+                    </div>
+                    <button id="buyLure2" class="pixel-btn px-3 py-1 text-xs text-cyan-300" onclick="game.buyItem('lure', 2, 80)">80 🪙</button>
+                </div>
+
+                <div class="bg-slate-800 p-3 rounded border border-slate-700 flex justify-between items-center">
+                    <div>
+                        <div class="text-cyan-300 font-bold">Golden Spinner</div>
+                        <div class="text-slate-400 text-xs">Attracts Rare & Legendary Fish</div>
+                    </div>
+                    <button id="buyLure3" class="pixel-btn px-3 py-1 text-xs text-cyan-300" onclick="game.buyItem('lure', 3, 250)">250 🪙</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="journalModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="pixel-panel w-full max-w-md p-4 rounded-lg flex flex-col space-y-4 max-h-[85vh]">
+            <div class="flex justify-between items-center border-b-2 border-slate-700 pb-2">
+                <h2 class="text-sm text-cyan-300 font-bold">📖 FISH JOURNAL</h2>
+                <button id="closeJournal" class="text-red-400 font-bold hover:text-red-300">✖</button>
+            </div>
+            
+            <div id="journalList" class="overflow-y-auto space-y-2 pr-1 text-xs pixel-subfont text-base">
+                <!-- Dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <div id="catchModal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+        <div class="pixel-panel w-full max-w-xs p-5 rounded-xl flex flex-col items-center space-y-4 text-center animate-float">
+            <div class="text-amber-400 text-xs">NEW CATCH!</div>
+            <div id="caughtFishSprite" class="text-5xl my-2">🐟</div>
+            <div id="caughtFishName" class="text-sm text-amber-300 font-bold">Pixel Minnow</div>
+            <div id="caughtFishDesc" class="text-xs text-slate-300 pixel-subfont text-lg">A small shiny fish.</div>
+            <div class="flex space-x-4 text-xs font-mono">
+                <div class="text-emerald-400">Length: <span id="caughtFishSize">12</span> cm</div>
+                <div class="text-amber-300">Value: <span id="caughtFishValue">15</span> 🪙</div>
+            </div>
+            <button id="collectFishBtn" class="pixel-btn px-6 py-2 text-xs text-emerald-300 rounded hover:bg-slate-700 w-full mt-2">
+                KEEP FISH
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript Game Engine -->
+    <script>
+        class RetroAudio {
+            constructor() {
+                this.ctx = null;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    if (AudioContext) {
+                        this.ctx = new AudioContext();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playCast() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(80, this.ctx.currentTime + 0.25);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playSplash() {
+                if (!this.ctx) return;
+                const bufferSize = this.ctx.sampleRate * 0.2;
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, this.ctx.currentTime);
+                filter.frequency.linearRampToValueAtTime(200, this.ctx.currentTime + 0.2);
+
+                const gain = this.ctx.createGain();
+                gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(this.ctx.destination);
+                noise.start();
+            }
+
+            playAlert() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                osc.frequency.setValueAtTime(900, this.ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.25);
+            }
+
+            playReelClick() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(250 + Math.random() * 50, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.05, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.04);
+            }
+
+            playVictory() {
+                if (!this.ctx) return;
+                const notes = [261.63, 329.63, 392.00, 523.25];
+                notes.forEach((freq, idx) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.1 + 0.2);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(this.ctx.currentTime + idx * 0.1);
+                    osc.stop(this.ctx.currentTime + idx * 0.1 + 0.2);
+                });
+            }
+
+            playEscape() {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(60, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.3);
+            }
+        }
+
+        const FISH_SPECIES = [
+            { id: 'carp', name: 'Pixel Carp', icon: '🐟', rarity: 1, baseVal: 15, baseMinLen: 10, baseMaxLen: 25, speed: 0.8, erratic: 0.1, desc: 'Common blue pond carp. Moves predictably.' },
+            { id: 'guppy', name: 'Neon Guppy', icon: '🐠', rarity: 1, baseVal: 22, baseMinLen: 5, baseMaxLen: 12, speed: 1.1, erratic: 0.2, desc: 'A glowing tiny fish found near shorelines.' },
+            { id: 'bass', name: 'Golden Bass', icon: '🐡', rarity: 2, baseVal: 45, baseMinLen: 20, baseMaxLen: 45, speed: 1.4, erratic: 0.35, desc: 'Strong fighter with swift vertical darts.' },
+            { id: 'eel', name: 'Shadow Eel', icon: '🐍', rarity: 2, baseVal: 70, baseMinLen: 35, baseMaxLen: 80, speed: 1.8, erratic: 0.5, desc: 'Slippery dark eel that sinks rapidly.' },
+            { id: 'salmon', name: 'Emerald Salmon', icon: '🐟', rarity: 3, baseVal: 110, baseMinLen: 30, baseMaxLen: 65, speed: 2.2, erratic: 0.65, desc: 'Fast swimmer with unpredictable leaps.' },
+            { id: 'dragon', name: 'Cosmic Koi', icon: '🐉', rarity: 4, baseVal: 250, baseMinLen: 50, baseMaxLen: 120, speed: 2.8, erratic: 0.85, desc: 'Legendary radiant fish of mystical waters.' }
+        ];
+
+        class FishingGame {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.audio = new RetroAudio();
+
+                // Player Stats & State
+                this.gold = 0;
+                this.level = 1;
+                this.xp = 0;
+                this.rodLevel = 1; // 1: Bamboo, 2: Fiberglass, 3: Iridium
+                this.lureLevel = 1; // 1: Worm, 2: Glow, 3: Golden Spinner
+                this.caughtSpecies = new Set();
+
+                // Game States: IDLE, CASTING, WAITING, NIBBLE, REELING, CAUGHT
+                this.state = 'IDLE';
+                
+                // Sensor state
+                this.useMotionSensor = false;
+                this.tiltX = 0; // Roll angle (-1 to 1)
+                this.tiltY = 0; // Pitch angle (-1 to 1)
+                this.lastShakeTime = 0;
+
+                // Bobber & Cast Physics
+                this.bobber = { x: 0, y: 0, targetX: 0, targetY: 0, floating: false, timer: 0 };
+                this.castPower = 0;
+                this.castDir = 1;
+
+                // Pop-up Target Reeling Mechanics
+                this.currentFish = null;
+                this.targets = []; // Active pop-up target markers
+                this.spawnTimer = 0;
+                this.activeDrag = null; // Currently dragging target reference
+                this.particles = []; // Hit particles
+                this.tiltSweetSpot = { x: 0.5, y: 0.5, radius: 45 }; // Center balance target
+                this.pointerPos = { x: 0, y: 0 };
+
+                this.catchProgress = 50; // 0 to 100%
+
+                // Canvas Dimensions
+                this.width = 320;
+                this.height = 480;
+
+                this.initCanvas();
+                this.bindEvents();
+                this.updateUI();
+                this.startLoop();
+            }
+
+            initCanvas() {
+                const resize = () => {
+                    const rect = this.canvas.parentElement.getBoundingClientRect();
+                    this.width = rect.width;
+                    this.height = rect.height;
+                    this.canvas.width = this.width;
+                    this.canvas.height = this.height;
+                    this.ctx.imageSmoothingEnabled = false;
+                };
+                window.addEventListener('resize', resize);
+                resize();
+            }
+
+            bindEvents() {
+                const touchZone = document.getElementById('touchZone');
+
+                // Helper to get relative canvas coordinates
+                const getCanvasCoords = (e) => {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                    return {
+                        x: clientX - rect.left,
+                        y: clientY - rect.top
+                    };
+                };
+
+                const handleActionStart = (e) => {
+                    e.preventDefault();
+                    this.audio.init();
+                    const pos = getCanvasCoords(e);
+                    this.pointerPos = pos;
+
+                    if (this.state === 'IDLE') {
+                        this.startCasting();
+                    } else if (this.state === 'CASTING') {
+                        this.releaseCast();
+                    } else if (this.state === 'NIBBLE') {
+                        this.hookFish();
+                    } else if (this.state === 'REELING') {
+                        this.checkTargetHit(pos);
+                    }
+                };
+
+                const handleActionMove = (e) => {
+                    if (this.state === 'REELING') {
+                        const pos = getCanvasCoords(e);
+                        this.pointerPos = pos;
+                        if (!this.useMotionSensor) {
+                            // Map mouse cursor to balance tilt position
+                            this.tiltX = (pos.x / this.width) * 2 - 1;
+                            this.tiltY = (pos.y / this.height) * 2 - 1;
+                        }
+                        this.checkDragProgress(pos);
+                    }
+                };
+
+                const handleActionEnd = (e) => {
+                    if (this.state === 'REELING') {
+                        this.activeDrag = null;
+                    }
+                };
+
+                touchZone.addEventListener('mousedown', handleActionStart);
+                touchZone.addEventListener('mousemove', handleActionMove);
+                touchZone.addEventListener('mouseup', handleActionEnd);
+
+                touchZone.addEventListener('touchstart', handleActionStart, { passive: false });
+                touchZone.addEventListener('touchmove', handleActionMove, { passive: false });
+                touchZone.addEventListener('touchend', handleActionEnd, { passive: false });
+
+                // Keyboard spacebar fallback
+                window.addEventListener('keydown', (e) => {
+                    if (e.code === 'Space' && !e.repeat) {
+                        handleActionStart(e);
+                    }
+                });
+
+                // Sensor Permission & Toggle Button
+                document.getElementById('sensorBtn').addEventListener('click', () => {
+                    this.toggleMotionSensors();
+                });
+
+                // Modal buttons
+                document.getElementById('shopBtn').addEventListener('click', () => this.toggleModal('shopModal', true));
+                document.getElementById('closeShop').addEventListener('click', () => this.toggleModal('shopModal', false));
+                document.getElementById('journalBtn').addEventListener('click', () => {
+                    this.renderJournal();
+                    this.toggleModal('journalModal', true);
+                });
+                document.getElementById('closeJournal').addEventListener('click', () => this.toggleModal('journalModal', false));
+                document.getElementById('collectFishBtn').addEventListener('click', () => {
+                    this.toggleModal('catchModal', false);
+                    this.state = 'IDLE';
+                    this.updateActionUI();
+                });
+            }
+
+            toggleMotionSensors() {
+                this.audio.init();
+                const btn = document.getElementById('sensorBtn');
+                const status = document.getElementById('motionStatus');
+
+                if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    DeviceOrientationEvent.requestPermission()
+                        .then(permissionState => {
+                            if (permissionState === 'granted') {
+                                this.enableSensors();
+                            } else {
+                                alert('Motion sensor permission was denied. Tap/drag controls will be used.');
+                            }
+                        })
+                        .catch(console.error);
+                } else if ('DeviceOrientationEvent' in window) {
+                    this.enableSensors();
+                } else {
+                    alert('Device orientation sensors are not supported on this browser.');
+                }
+            }
+
+            enableSensors() {
+                this.useMotionSensor = !this.useMotionSensor;
+                const btn = document.getElementById('sensorBtn');
+                const status = document.getElementById('motionStatus');
+                const tag = document.getElementById('controlModeTag');
+
+                if (this.useMotionSensor) {
+                    btn.innerText = '📱 Tilt: ON';
+                    btn.classList.replace('text-emerald-300', 'text-amber-300');
+                    status.innerText = 'Sensor: Active (Tilt Phone)';
+                    tag.innerText = 'TILT & POP TARGETS!';
+
+                    window.addEventListener('deviceorientation', (e) => {
+                        if (e.gamma !== null && e.beta !== null) {
+                            // Gamma is left/right tilt (-90 to 90)
+                            // Beta is front/back tilt (-180 to 180)
+                            this.tiltX = Math.max(-1, Math.min(1, e.gamma / 35));
+                            this.tiltY = Math.max(-1, Math.min(1, (e.beta - 25) / 35));
+                        }
+                    });
+
+                    // Jerk/Shake motion detection to hook fish
+                    window.addEventListener('devicemotion', (e) => {
+                        if (this.state === 'NIBBLE' && e.accelerationIncludingGravity) {
+                            const acc = e.accelerationIncludingGravity;
+                            const totalAcc = Math.sqrt(acc.x * acc.x + acc.y * acc.y + acc.z * acc.z);
+                            if (totalAcc > 18 && Date.now() - this.lastShakeTime > 800) {
+                                this.lastShakeTime = Date.now();
+                                this.hookFish();
+                            }
+                        }
+                    });
+
+                } else {
+                    btn.innerText = '📱 Tilt: OFF';
+                    btn.classList.replace('text-amber-300', 'text-emerald-300');
+                    status.innerText = 'Sensor: Off (Touch/Mouse)';
+                    tag.innerText = 'POP TARGETS & DRAG!';
+                }
+            }
+
+            startCasting() {
+                this.state = 'CASTING';
+                this.castPower = 0;
+                this.castDir = 1;
+                this.updateActionUI();
+            }
+
+            releaseCast() {
+                this.state = 'WAITING';
+                this.audio.playCast();
+
+                const pierX = this.width * 0.25;
+                const pierY = this.height * 0.58;
+                const dist = 80 + (this.castPower / 100) * (this.width * 0.5);
+
+                this.bobber.x = pierX;
+                this.bobber.y = pierY - 20;
+                this.bobber.targetX = pierX + dist;
+                this.bobber.targetY = pierY + 40;
+                this.bobber.floating = false;
+
+                this.updateActionUI();
+
+                const lureBonus = this.lureLevel * 500;
+                const waitTime = Math.max(1500, 2500 + Math.random() * 3000 - lureBonus);
+
+                setTimeout(() => {
+                    if (this.state === 'WAITING') {
+                        this.triggerNibble();
+                    }
+                }, waitTime);
+            }
+
+            triggerNibble() {
+                this.state = 'NIBBLE';
+                this.audio.playAlert();
+                this.audio.playSplash();
+                this.showBanner('NIBBLE! TAP OR JERK PHONE!', 'emerald');
+
+                this.nibbleTimeout = setTimeout(() => {
+                    if (this.state === 'NIBBLE') {
+                        this.state = 'IDLE';
+                        this.showBanner('FISH GOT AWAY...', 'red');
+                        this.audio.playEscape();
+                        this.updateActionUI();
+                    }
+                }, 1400);
+            }
+
+            hookFish() {
+                clearTimeout(this.nibbleTimeout);
+                this.state = 'REELING';
+                this.audio.playSplash();
+
+                const rareRoll = Math.random() + (this.lureLevel === 3 ? 0.3 : 0);
+                let pool = FISH_SPECIES.filter(f => f.rarity <= (rareRoll > 0.85 ? 4 : rareRoll > 0.6 ? 3 : 2));
+                if (pool.length === 0) pool = [FISH_SPECIES[0]];
+                
+                this.currentFish = pool[Math.floor(Math.random() * pool.length)];
+
+                this.targets = [];
+                this.particles = [];
+                this.spawnTimer = 0;
+                this.catchProgress = 50;
+                this.activeDrag = null;
+
+                document.getElementById('reelFishName').innerText = `REELING: ${this.currentFish.name}`;
+                document.getElementById('minigameContainer').classList.remove('hidden');
+                this.updateActionUI();
+
+                // Immediately spawn initial target
+                this.spawnTarget();
+            }
+
+            spawnTarget() {
+                if (this.state !== 'REELING') return;
+
+                // Pick random position in middle portion of screen
+                const minX = this.width * 0.15;
+                const maxX = this.width * 0.85;
+                const minY = this.height * 0.25;
+                const maxY = this.height * 0.75;
+
+                const x = minX + Math.random() * (maxX - minX);
+                const y = minY + Math.random() * (maxY - minY);
+
+                // 70% Tap Target, 30% Drag Target
+                const isDrag = Math.random() < 0.35;
+
+                if (isDrag) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const len = 60 + Math.random() * 40;
+                    const endX = Math.max(minX, Math.min(maxX, x + Math.cos(angle) * len));
+                    const endY = Math.max(minY, Math.min(maxY, y + Math.sin(angle) * len));
+
+                    this.targets.push({
+                        id: Date.now() + Math.random(),
+                        type: 'DRAG',
+                        startX: x,
+                        startY: y,
+                        endX: endX,
+                        endY: endY,
+                        radius: 26,
+                        maxDuration: 2.5 / (this.currentFish.speed * 0.8),
+                        duration: 2.5 / (this.currentFish.speed * 0.8)
+                    });
+                } else {
+                    this.targets.push({
+                        id: Date.now() + Math.random(),
+                        type: 'TAP',
+                        x: x,
+                        y: y,
+                        radius: 24,
+                        maxDuration: 1.8 / (this.currentFish.speed * 0.8),
+                        duration: 1.8 / (this.currentFish.speed * 0.8)
+                    });
+                }
+            }
+
+            checkTargetHit(pos) {
+                if (this.state !== 'REELING') return;
+
+                for (let i = this.targets.length - 1; i >= 0; i--) {
+                    const t = this.targets[i];
+
+                    if (t.type === 'TAP') {
+                        const dist = Math.hypot(pos.x - t.x, pos.y - t.y);
+                        if (dist <= t.radius + 10) {
+                            // Target hit!
+                            const bonus = 14 * (1 + (this.rodLevel - 1) * 0.2);
+                            this.catchProgress = Math.min(100, this.catchProgress + bonus);
+                            this.audio.playReelClick();
+                            this.spawnParticles(t.x, t.y, '#f59e0b', 8);
+                            this.targets.splice(i, 1);
+                            return;
+                        }
+                    } else if (t.type === 'DRAG') {
+                        const dist = Math.hypot(pos.x - t.startX, pos.y - t.startY);
+                        if (dist <= t.radius + 10) {
+                            this.activeDrag = { target: t, progress: 0 };
+                            this.audio.playReelClick();
+                            return;
+                        }
+                    }
+                }
+            }
+
+            checkDragProgress(pos) {
+                if (!this.activeDrag || this.state !== 'REELING') return;
+
+                const t = this.activeDrag.target;
+                const distToEnd = Math.hypot(pos.x - t.endX, pos.y - t.endY);
+
+                if (distToEnd <= t.radius + 10) {
+                    // Completed drag target!
+                    const bonus = 22 * (1 + (this.rodLevel - 1) * 0.2);
+                    this.catchProgress = Math.min(100, this.catchProgress + bonus);
+                    this.audio.playSplash();
+                    this.spawnParticles(t.endX, t.endY, '#10b981', 12);
+
+                    // Remove target
+                    const index = this.targets.findIndex(item => item.id === t.id);
+                    if (index !== -1) this.targets.splice(index, 1);
+                    this.activeDrag = null;
+                }
+            }
+
+            spawnParticles(x, y, color, count) {
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 1 + Math.random() * 4;
+                    this.particles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        life: 1.0,
+                        color: color
+                    });
+                }
+            }
+
+            updateReelingLogic(dt) {
+                if (this.state !== 'REELING') return;
+
+                // 1. Target Spawning Logic
+                this.spawnTimer += dt;
+                const spawnInterval = Math.max(0.7, 1.4 - (this.lureLevel * 0.2));
+                if (this.spawnTimer >= spawnInterval && this.targets.length < 3) {
+                    this.spawnTimer = 0;
+                    this.spawnTarget();
+                }
+
+                // 2. Update Active Target Timers & Check Expirations
+                for (let i = this.targets.length - 1; i >= 0; i--) {
+                    const t = this.targets[i];
+                    t.duration -= dt;
+
+                    if (t.duration <= 0) {
+                        // Target expired (missed)
+                        this.catchProgress -= 10;
+                        this.audio.playEscape();
+                        const missX = t.type === 'TAP' ? t.x : t.startX;
+                        const missY = t.type === 'TAP' ? t.y : t.startY;
+                        this.spawnParticles(missX, missY, '#ef4444', 6);
+                        
+                        if (this.activeDrag && this.activeDrag.target.id === t.id) {
+                            this.activeDrag = null;
+                        }
+                        this.targets.splice(i, 1);
+                    }
+                }
+
+                // 3. Tilt Balance Crosshair Dynamic
+                // Sweet spot target shifts periodically
+                const sweetX = (this.width / 2) + Math.sin(Date.now() * 0.002 * this.currentFish.speed) * (this.width * 0.25);
+                const sweetY = (this.height / 2) + Math.cos(Date.now() * 0.003 * this.currentFish.speed) * (this.height * 0.15);
+
+                const crosshairX = (this.width / 2) + (this.tiltX * (this.width * 0.4));
+                const crosshairY = (this.height / 2) + (this.tiltY * (this.height * 0.3));
+
+                const distToSweet = Math.hypot(crosshairX - sweetX, crosshairY - sweetY);
+                const sweetRadius = 42 + (this.rodLevel * 6);
+
+                if (distToSweet <= sweetRadius) {
+                    // Inside balance sweet spot: continuous slight catch boost
+                    this.catchProgress += dt * 8;
+                } else {
+                    // Outside sweet spot: small drain penalty
+                    const lureDampening = this.lureLevel === 2 ? 0.6 : 1.0;
+                    this.catchProgress -= dt * 6 * lureDampening;
+                }
+
+                this.catchProgress = Math.max(0, Math.min(100, this.catchProgress));
+
+                // Save balance coords for renderer
+                this.tiltSweetSpot = { x: sweetX, y: sweetY, radius: sweetRadius, crossX: crosshairX, crossY: crosshairY, inZone: distToSweet <= sweetRadius };
+
+                // Update DOM Catch Progress HUD
+                document.getElementById('catchProgress').style.width = `${this.catchProgress}%`;
+
+                // Check Win / Loss Conditions
+                if (this.catchProgress >= 100) {
+                    this.finishCatch(true);
+                } else if (this.catchProgress <= 0) {
+                    this.finishCatch(false);
+                }
+            }
+
+            finishCatch(success) {
+                document.getElementById('minigameContainer').classList.add('hidden');
+                this.targets = [];
+                this.activeDrag = null;
+
+                if (success) {
+                    this.state = 'CAUGHT';
+                    this.audio.playVictory();
+
+                    const size = Math.floor(this.currentFish.baseMinLen + Math.random() * (this.currentFish.baseMaxLen - this.currentFish.baseMinLen));
+                    const value = Math.floor(this.currentFish.baseVal * (size / this.currentFish.baseMinLen));
+
+                    this.gold += value;
+                    this.xp += value * 2;
+                    this.caughtSpecies.add(this.currentFish.id);
+
+                    if (this.xp >= this.level * 100) {
+                        this.level++;
+                    }
+
+                    document.getElementById('caughtFishSprite').innerText = this.currentFish.icon;
+                    document.getElementById('caughtFishName').innerText = this.currentFish.name;
+                    document.getElementById('caughtFishDesc').innerText = this.currentFish.desc;
+                    document.getElementById('caughtFishSize').innerText = size;
+                    document.getElementById('caughtFishValue').innerText = value;
+
+                    this.toggleModal('catchModal', true);
+                    this.updateUI();
+
+                } else {
+                    this.state = 'IDLE';
+                    this.audio.playEscape();
+                    this.showBanner('FISH ESCAPED!', 'red');
+                    this.updateActionUI();
+                }
+            }
+
+            buyItem(type, level, cost) {
+                this.audio.init();
+                if (this.gold >= cost) {
+                    this.gold -= cost;
+                    if (type === 'rod') {
+                        this.rodLevel = level;
+                        document.getElementById(`buyRod${level}`).disabled = true;
+                        document.getElementById(`buyRod${level}`).innerText = 'OWNED';
+                    } else if (type === 'lure') {
+                        this.lureLevel = level;
+                        document.getElementById(`buyLure${level}`).disabled = true;
+                        document.getElementById(`buyLure${level}`).innerText = 'OWNED';
+                    }
+                    this.audio.playVictory();
+                    this.updateUI();
+                } else {
+                    this.audio.playEscape();
+                    alert('Not enough gold!');
+                }
+            }
+
+            updateUI() {
+                document.getElementById('goldDisplay').innerText = this.gold;
+                document.getElementById('levelDisplay').innerText = this.level;
+
+                const rodNames = ['', 'Bamboo Pole', 'Fiberglass Rod', 'Iridium Rod'];
+                const lureNames = ['', 'Basic Worm', 'Glow Lure', 'Golden Spinner'];
+
+                document.getElementById('rodName').innerText = rodNames[this.rodLevel];
+                document.getElementById('lureName').innerText = lureNames[this.lureLevel];
+            }
+
+            updateActionUI() {
+                const btn = document.getElementById('mainActionBtn');
+                if (this.state === 'IDLE') {
+                    btn.innerText = '🎣 TAP TO CAST LINE';
+                    btn.className = 'pixel-btn px-6 py-4 rounded-xl text-xs sm:text-sm text-amber-200 bg-amber-800/90 hover:bg-amber-700 animate-bounce shadow-lg';
+                } else if (this.state === 'CASTING') {
+                    btn.innerText = '🎯 TAP TO SET DISTANCE';
+                    btn.className = 'pixel-btn px-6 py-4 rounded-xl text-xs sm:text-sm text-emerald-200 bg-emerald-800/90 hover:bg-emerald-700 shadow-lg';
+                } else if (this.state === 'WAITING') {
+                    btn.innerText = '🌊 WAITING FOR BITE...';
+                    btn.className = 'pixel-btn px-6 py-4 rounded-xl text-xs sm:text-sm text-slate-400 bg-slate-800/80 shadow-lg cursor-not-allowed';
+                } else if (this.state === 'NIBBLE') {
+                    btn.innerText = '⚡ HOOK IT! TAP / JERK!';
+                    btn.className = 'pixel-btn px-6 py-4 rounded-xl text-xs sm:text-sm text-amber-300 bg-red-700/90 animate-ping shadow-lg';
+                } else if (this.state === 'REELING') {
+                    btn.innerText = this.useMotionSensor ? '📱 POP TARGETS & TILT PHONE TO BALANCE!' : '🎯 TAP & DRAG TARGET MARKERS!';
+                    btn.className = 'pixel-btn px-6 py-4 rounded-xl text-xs sm:text-sm text-amber-200 bg-amber-900/90 shadow-lg';
+                } else if (this.state === 'CAUGHT') {
+                    btn.innerText = '🎉 CATCH CELEBRATION!';
+                    btn.className = 'pixel-btn px-6 py-4 rounded-xl text-xs sm:text-sm text-emerald-300 bg-emerald-900/80';
+                }
+            }
+
+            showBanner(msg, color) {
+                const banner = document.getElementById('actionBanner');
+                banner.innerText = msg;
+                banner.className = `absolute top-8 left-1/2 -translate-x-1/2 px-4 py-2 bg-slate-900/90 border-2 border-${color}-400 text-${color}-300 text-xs sm:text-sm rounded pixel-border pointer-events-none transition-all duration-300 transform scale-100 z-40 text-center`;
+                setTimeout(() => {
+                    banner.classList.replace('scale-100', 'scale-0');
+                }, 1800);
+            }
+
+            toggleModal(id, show) {
+                this.audio.init();
+                const modal = document.getElementById(id);
+                if (show) modal.classList.remove('hidden');
+                else modal.classList.add('hidden');
+            }
+
+            renderJournal() {
+                const list = document.getElementById('journalList');
+                list.innerHTML = '';
+                FISH_SPECIES.forEach(fish => {
+                    const caught = this.caughtSpecies.has(fish.id);
+                    const div = document.createElement('div');
+                    div.className = `p-3 rounded border flex items-center justify-between ${caught ? 'bg-slate-800 border-slate-700' : 'bg-slate-950 border-slate-800 opacity-60'}`;
+                    div.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">${caught ? fish.icon : '❓'}</span>
+                            <div>
+                                <div class="font-bold ${caught ? 'text-amber-300' : 'text-slate-500'}">${caught ? fish.name : 'Unknown Species'}</div>
+                                <div class="text-slate-400 text-xs">${caught ? fish.desc : 'Catch this fish to log info.'}</div>
+                            </div>
+                        </div>
+                        <div class="text-right font-mono">
+                            <div class="text-amber-400">${caught ? '~' + fish.baseVal + ' 🪙' : '???'}</div>
+                            <div class="text-xs text-slate-500">${'★'.repeat(fish.rarity)}</div>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            }
+
+            startLoop() {
+                let lastTime = performance.now();
+                const loop = (now) => {
+                    const dt = (now - lastTime) / 1000;
+                    lastTime = now;
+
+                    this.update(dt);
+                    this.render();
+
+                    requestAnimationFrame(loop);
+                };
+                requestAnimationFrame(loop);
+            }
+
+            update(dt) {
+                // Casting Power Meter Oscillations
+                if (this.state === 'CASTING') {
+                    this.castPower += this.castDir * dt * 120;
+                    if (this.castPower >= 100) {
+                        this.castPower = 100;
+                        this.castDir = -1;
+                    } else if (this.castPower <= 0) {
+                        this.castPower = 0;
+                        this.castDir = 1;
+                    }
+                }
+
+                // Smooth Arc Motion for Bobber Flight
+                if (this.state !== 'IDLE' && this.state !== 'CASTING') {
+                    this.bobber.x += (this.bobber.targetX - this.bobber.x) * 0.1;
+                    this.bobber.y += (this.bobber.targetY - this.bobber.y) * 0.1;
+                }
+
+                // Update particles
+                for (let i = this.particles.length - 1; i >= 0; i--) {
+                    const p = this.particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= dt * 2.5;
+                    if (p.life <= 0) this.particles.splice(i, 1);
+                }
+
+                // Minigame target logic update
+                this.updateReelingLogic(dt);
+            }
+
+            render() {
+                const ctx = this.ctx;
+                const w = this.width;
+                const h = this.height;
+
+                // 1. Pixel Parallax Sky Gradient
+                const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.6);
+                skyGrad.addColorStop(0, '#0f172a'); // Night slate blue
+                skyGrad.addColorStop(0.6, '#1e1b4b'); 
+                skyGrad.addColorStop(1, '#311042'); // Sunset purple accent
+                ctx.fillStyle = skyGrad;
+                ctx.fillRect(0, 0, w, h);
+
+                // Pixel Moon / Stars
+                ctx.fillStyle = '#fef08a';
+                ctx.fillRect(w * 0.8, h * 0.08, 18, 18); // Blocky pixel moon
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(w * 0.15, h * 0.1, 2, 2);
+                ctx.fillRect(w * 0.45, h * 0.05, 3, 3);
+                ctx.fillRect(w * 0.65, h * 0.18, 2, 2);
+
+                // 2. Distant Pixel Mountain Silhouette
+                ctx.fillStyle = '#1e112a';
+                ctx.beginPath();
+                ctx.moveTo(0, h * 0.45);
+                ctx.lineTo(w * 0.2, h * 0.32);
+                ctx.lineTo(w * 0.45, h * 0.45);
+                ctx.lineTo(w * 0.7, h * 0.28);
+                ctx.lineTo(w, h * 0.45);
+                ctx.lineTo(w, h * 0.6);
+                ctx.lineTo(0, h * 0.6);
+                ctx.fill();
+
+                // 3. Pixel Water Body Layers
+                const waterGrad = ctx.createLinearGradient(0, h * 0.45, 0, h);
+                waterGrad.addColorStop(0, '#1d4ed8'); // Bright deep ocean blue
+                waterGrad.addColorStop(0.5, '#1e3a8a');
+                waterGrad.addColorStop(1, '#0f172a');
+                ctx.fillStyle = waterGrad;
+                ctx.fillRect(0, h * 0.45, w, h * 0.55);
+
+                // Animated Pixel Wave Highlights
+                const time = Date.now() * 0.003;
+                ctx.fillStyle = '#60a5fa';
+                for (let i = 0; i < 6; i++) {
+                    const waveY = h * 0.48 + i * 25;
+                    const waveX = (Math.sin(time + i) * 20 + i * 65) % w;
+                    ctx.fillRect(waveX, waveY, 30, 3);
+                    ctx.fillRect((waveX + w * 0.5) % w, waveY + 10, 20, 2);
+                }
+
+                // 4. Pixel Pier & Fisherman Sprite
+                const pierX = w * 0.25;
+                const pierY = h * 0.58;
+
+                ctx.fillStyle = '#451a03'; // Dark wood
+                ctx.fillRect(pierX - 60, pierY, 12, h - pierY);
+                ctx.fillRect(pierX - 20, pierY, 12, h - pierY);
+                ctx.fillRect(pierX + 20, pierY, 12, h - pierY);
+
+                ctx.fillStyle = '#78350f';
+                ctx.fillRect(0, pierY, pierX + 30, 14);
+                ctx.fillStyle = '#92400e';
+                ctx.fillRect(0, pierY, pierX + 30, 4);
+
+                const fisherX = pierX + 5;
+                const fisherY = pierY - 28;
+
+                ctx.fillStyle = '#b45309'; // Fisherman Coat
+                ctx.fillRect(fisherX, fisherY + 10, 14, 16);
+                ctx.fillStyle = '#fde047'; // Yellow Rainhat
+                ctx.fillRect(fisherX - 2, fisherY, 18, 6);
+                ctx.fillRect(fisherX + 2, fisherY - 4, 10, 4);
+                ctx.fillStyle = '#fca5a5'; // Face
+                ctx.fillRect(fisherX + 4, fisherY + 6, 8, 6);
+
+                const rodTipX = fisherX + 28;
+                const rodTipY = fisherY - 12;
+
+                ctx.strokeStyle = '#d97706';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(fisherX + 10, fisherY + 12);
+                ctx.lineTo(rodTipX, rodTipY);
+                ctx.stroke();
+
+                // 5. Fishing Line & Bobber Rendering
+                if (this.state !== 'IDLE') {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(rodTipX, rodTipY);
+                    
+                    if (this.state === 'CASTING') {
+                        const powerDist = (this.castPower / 100) * (w * 0.5);
+                        ctx.quadraticCurveTo(rodTipX + powerDist * 0.5, rodTipY - 30, rodTipX + powerDist, pierY + 40);
+                    } else {
+                        ctx.lineTo(this.bobber.x, this.bobber.y);
+                    }
+                    ctx.stroke();
+
+                    if (this.state !== 'CASTING') {
+                        const bX = this.bobber.x;
+                        const bY = this.bobber.y + (Math.sin(Date.now() * 0.005) * 2);
+
+                        ctx.fillStyle = '#ef4444';
+                        ctx.fillRect(bX - 4, bY - 4, 8, 4);
+                        ctx.fillStyle = '#f8fafc';
+                        ctx.fillRect(bX - 4, bY, 8, 4);
+
+                        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                        ctx.lineWidth = 1;
+                        const rippleR = (Date.now() * 0.01) % 12;
+                        ctx.strokeRect(bX - rippleR, bY - rippleR * 0.4, rippleR * 2, rippleR * 0.8);
+
+                        if (this.state === 'NIBBLE') {
+                            ctx.fillStyle = '#f59e0b';
+                            ctx.font = 'bold 20px "Press Start 2P"';
+                            ctx.fillText('!', bX - 4, bY - 18);
+                        }
+                    }
+                }
+
+                // 6. Casting Meter Visual
+                if (this.state === 'CASTING') {
+                    const meterW = 120;
+                    const meterH = 14;
+                    const meterX = w / 2 - meterW / 2;
+                    const meterY = h * 0.25;
+
+                    ctx.fillStyle = '#0f172a';
+                    ctx.fillRect(meterX - 2, meterY - 2, meterW + 4, meterH + 4);
+                    
+                    const meterGrad = ctx.createLinearGradient(meterX, 0, meterX + meterW, 0);
+                    meterGrad.addColorStop(0, '#ef4444');
+                    meterGrad.addColorStop(0.5, '#10b981');
+                    meterGrad.addColorStop(1, '#ef4444');
+                    ctx.fillStyle = meterGrad;
+                    ctx.fillRect(meterX, meterY, meterW, meterH);
+
+                    const notchX = meterX + (this.castPower / 100) * meterW;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(notchX - 2, meterY - 4, 4, meterH + 8);
+                }
+
+                // 7. REELING MINIGAME OVERLAY: Target Popups, Drag Arrows & Tilt Crosshair
+                if (this.state === 'REELING') {
+                    // Draw Tilt Balance Sweet Spot Ring
+                    const spot = this.tiltSweetSpot;
+                    ctx.strokeStyle = spot.inZone ? 'rgba(16, 185, 129, 0.6)' : 'rgba(239, 68, 68, 0.5)';
+                    ctx.fillStyle = spot.inZone ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.1)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(spot.x, spot.y, spot.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Balance Sweet Spot Label
+                    ctx.fillStyle = spot.inZone ? '#34d399' : '#f87171';
+                    ctx.font = '8px "Press Start 2P"';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(spot.inZone ? 'BALANCED!' : 'TILT TO CENTER', spot.x, spot.y - spot.radius - 6);
+
+                    // Crosshair Marker (Phone Tilt / Cursor position)
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(spot.crossX, spot.crossY, 12, 0, Math.PI * 2);
+                    ctx.moveTo(spot.crossX - 16, spot.crossY); ctx.lineTo(spot.crossX + 16, spot.crossY);
+                    ctx.moveTo(spot.crossX, spot.crossY - 16); ctx.lineTo(spot.crossX, spot.crossY + 16);
+                    ctx.stroke();
+
+                    // Render Active Pop-up Markers
+                    this.targets.forEach(t => {
+                        const lifeRatio = Math.max(0, t.duration / t.maxDuration);
+
+                        if (t.type === 'TAP') {
+                            // Pulsing Outer Ring
+                            ctx.strokeStyle = '#f59e0b';
+                            ctx.lineWidth = 3;
+                            ctx.beginPath();
+                            ctx.arc(t.x, t.y, t.radius * lifeRatio, 0, Math.PI * 2);
+                            ctx.stroke();
+
+                            // Inner Target Bullseye
+                            ctx.fillStyle = '#ef4444';
+                            ctx.beginPath();
+                            ctx.arc(t.x, t.y, 10, 0, Math.PI * 2);
+                            ctx.fill();
+
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 10px "Press Start 2P"';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('TAP!', t.x, t.y + 4);
+
+                        } else if (t.type === 'DRAG') {
+                            // Drag Track Line
+                            ctx.strokeStyle = 'rgba(245, 158, 11, 0.6)';
+                            ctx.lineWidth = 6;
+                            ctx.beginPath();
+                            ctx.moveTo(t.startX, t.startY);
+                            ctx.lineTo(t.endX, t.endY);
+                            ctx.stroke();
+
+                            // Start Node
+                            ctx.fillStyle = '#10b981';
+                            ctx.beginPath();
+                            ctx.arc(t.startX, t.startY, t.radius * lifeRatio, 0, Math.PI * 2);
+                            ctx.fill();
+
+                            ctx.fillStyle = '#ffffff';
+                            ctx.font = 'bold 8px "Press Start 2P"';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('DRAG', t.startX, t.startY + 3);
+
+                            // End Arrow Node
+                            ctx.fillStyle = '#3b82f6';
+                            ctx.beginPath();
+                            ctx.arc(t.endX, t.endY, 14, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.fillText('GO!', t.endX, t.endY + 3);
+                        }
+                    });
+                }
+
+                // Render Hit Particles
+                this.particles.forEach(p => {
+                    ctx.fillStyle = p.color;
+                    ctx.globalAlpha = p.life;
+                    ctx.fillRect(p.x - 2, p.y - 2, 4, 4);
+                    ctx.globalAlpha = 1.0;
+                });
+            }
+        }
+
+        // Initialize Game Instance on Load
+        let game;
+        window.addEventListener('load', () => {
+            game = new FishingGame();
+        });
+    </script>
+</body>
+</html>
